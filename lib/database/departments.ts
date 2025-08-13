@@ -101,6 +101,31 @@ export async function getDepartmentEmployeeCount(departmentId: number) {
   return count || 0
 }
 
+export async function getDepartmentEmployees(departmentId: number) {
+  const supabase = createClient()
+
+  const { data, error } = await supabase
+    .from("employees")
+    .select(`
+      id,
+      name,
+      cedula,
+      salary,
+      position:positions(name)
+    `)
+    .eq("department_id", departmentId)
+    .order("name")
+
+  if (error) {
+    throw new Error(`Error fetching department employees: ${error.message}`)
+  }
+
+  return data.map((emp) => ({
+    ...emp,
+    position: emp.position?.name || "Sin puesto",
+  }))
+}
+
 // Position functions
 export async function getPositions() {
   const supabase = createClient()
@@ -201,4 +226,29 @@ export async function getPositionEmployeeCount(positionId: number) {
   }
 
   return count || 0
+}
+
+export async function getPositionEmployees(positionId: number) {
+  const supabase = createClient()
+
+  const { data, error } = await supabase
+    .from("employees")
+    .select(`
+      id,
+      name,
+      cedula,
+      salary,
+      department:departments(name)
+    `)
+    .eq("position_id", positionId)
+    .order("name")
+
+  if (error) {
+    throw new Error(`Error fetching position employees: ${error.message}`)
+  }
+
+  return data.map((emp) => ({
+    ...emp,
+    department: emp.department?.name || "Sin departamento",
+  }))
 }

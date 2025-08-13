@@ -51,6 +51,14 @@ export interface EmployeeReport {
   netPay: number
 }
 
+export interface DepartmentAnalytics {
+  department_id: string
+  department_name: string
+  employee_count: number
+  total_salary: number
+  avg_salary: number
+}
+
 export async function getPayrollSummary(startDate?: string, endDate?: string): Promise<PayrollSummary> {
   const supabase = createClient()
 
@@ -294,4 +302,33 @@ export async function getTransactionsByPeriod(startDate: string, endDate: string
       net: amounts.income - amounts.deduction,
     }))
     .sort((a, b) => a.date.localeCompare(b.date))
+}
+
+export async function getDepartmentAnalytics(): Promise<DepartmentAnalytics[]> {
+  const supabase = createClient()
+
+  const { data: departments } = await supabase.from("departments").select(`
+    id,
+    name,
+    employees (
+      id,
+      salary
+    )
+  `)
+
+  if (!departments) return []
+
+  return departments.map((dept) => {
+    const employeeCount = dept.employees.length
+    const totalSalary = dept.employees.reduce((sum, emp) => sum + emp.salary, 0)
+    const avgSalary = employeeCount > 0 ? totalSalary / employeeCount : 0
+
+    return {
+      department_id: dept.id,
+      department_name: dept.name,
+      employee_count: employeeCount,
+      total_salary: totalSalary,
+      avg_salary: avgSalary,
+    }
+  })
 }
